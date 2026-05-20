@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Brain, Award, Trophy, Target, Lightbulb, Puzzle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
 
 interface GameScore {
   game: string;
@@ -34,12 +35,14 @@ const BrainGames = () => {
     setFlippedCards([]);
     setMatchedCards([]);
     setActiveGame("memory");
+    showSuccess("Memory Game Started!", "Match all the pairs to win");
   };
 
   const startMathGame = () => {
     generateMathQuestion();
     setMathScore(0);
     setActiveGame("math");
+    showSuccess("Math Challenge Started!", "Solve as many problems as you can");
   };
 
   const startWordGame = () => {
@@ -54,20 +57,14 @@ const BrainGames = () => {
     setTimeLeft(10);
     setActiveGame("word");
 
-    toast({
-      title: "Memorize these words!",
-      description: "You have 10 seconds...",
-    });
+    showInfo("Memorize these words!", "You have 10 seconds...");
 
     setTimeout(() => {
       setWordPhase("recall");
-
-      toast({
-        title: "Time's up!",
-        description: "Now recall the words in order",
-      });
+      showWarning("Time's up!", "Now recall the words in order");
     }, 10000);
   };
+  
   useEffect(() => {
     if (wordPhase !== "memorize" || timeLeft <= 0) return;
 
@@ -97,14 +94,22 @@ const BrainGames = () => {
       if (memoryCards[first] === memoryCards[second]) {
         setMatchedCards([...matchedCards, first, second]);
         setFlippedCards([]);
+        
+        // Show success when a pair is matched
+        showSuccess("Match Found!", `You matched a pair! (${matchedCards.length / 2 + 1}/${memoryCards.length / 2})`);
 
         if (matchedCards.length + 2 === memoryCards.length) {
+          showSuccess("🎉 Congratulations! 🎉", "You've matched all pairs! Great memory!");
           toast({
             title: "🎉 Congratulations!",
             description: "You've matched all pairs!",
           });
         }
       } else {
+        // Show info when no match
+        setTimeout(() => {
+          showWarning("No match", "Try again!");
+        }, 500);
         setTimeout(() => setFlippedCards([]), 1000);
       }
     }
@@ -113,13 +118,16 @@ const BrainGames = () => {
   const checkMathAnswer = () => {
     const correct = mathQuestion.num1 + mathQuestion.num2;
     if (mathQuestion.answer === correct) {
-      setMathScore(mathScore + 1);
+      const newScore = mathScore + 1;
+      setMathScore(newScore);
+      showSuccess("✓ Correct! ✓", `Score: ${newScore}`);
       toast({
         title: "✓ Correct!",
-        description: `Score: ${mathScore + 1}`,
+        description: `Score: ${newScore}`,
       });
       generateMathQuestion();
     } else {
+      showError("✗ Incorrect", `The answer was ${correct}. Keep practicing!`);
       toast({
         title: "✗ Incorrect",
         description: `The answer was ${correct}`,
@@ -183,6 +191,9 @@ const BrainGames = () => {
                   if (game.id === "memory") startMemoryGame();
                   else if (game.id === "math") startMathGame();
                   else if (game.id === "word") startWordGame();
+                  else if (game.id === "pattern") {
+                    showInfo("Coming Soon!", "This game is under development");
+                  }
                 }}
               >
                 <CardHeader>
@@ -209,9 +220,18 @@ const BrainGames = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Memory Match Game</span>
-              <Button variant="outline" onClick={() => setActiveGame(null)}>
-                Exit Game
-              </Button>
+              <div className="flex gap-2">
+                <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-lg">
+                  <Trophy className="w-5 h-5 text-primary" />
+                  <span className="font-bold">{matchedCards.length / 2} / {memoryCards.length / 2} pairs</span>
+                </div>
+                <Button variant="outline" onClick={() => {
+                  setActiveGame(null);
+                  showInfo("Game Exited", "Come back anytime to play again!");
+                }}>
+                  Exit Game
+                </Button>
+              </div>
             </CardTitle>
             <CardDescription>
               Matched: {matchedCards.length / 2} / {memoryCards.length / 2} pairs
@@ -246,7 +266,10 @@ const BrainGames = () => {
                   <Trophy className="w-5 h-5 text-primary" />
                   <span className="font-bold">{mathScore}</span>
                 </div>
-                <Button variant="outline" onClick={() => setActiveGame(null)}>
+                <Button variant="outline" onClick={() => {
+                  setActiveGame(null);
+                  showInfo("Math Challenge Exited", `Your final score: ${mathScore}`);
+                }}>
                   Exit Game
                 </Button>
               </div>
@@ -280,7 +303,10 @@ const BrainGames = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Word Recall Challenge</span>
-              <Button variant="outline" onClick={() => setActiveGame(null)}>
+              <Button variant="outline" onClick={() => {
+                setActiveGame(null);
+                showInfo("Word Game Exited", "Keep practicing your memory!");
+              }}>
                 Exit Game
               </Button>
             </CardTitle>
@@ -309,6 +335,11 @@ const BrainGames = () => {
                     </div>
                   ))}
                 </div>
+                {wordPhase === "recall" && (
+                  <div className="text-center text-muted-foreground">
+                    The words have been hidden. Recall them in the correct order!
+                  </div>
+                )}
               </div>
               <div className="p-6 bg-muted rounded-xl">
                 <h3 className="text-lg font-semibold mb-4">Available words:</h3>
@@ -318,9 +349,12 @@ const BrainGames = () => {
                       key={idx}
                       variant="outline"
                       onClick={() => {
-                        if (wordPhase !== "recall") return;
-
+                        if (wordPhase !== "recall") {
+                          showWarning("Wait!", "Memorize phase is still active");
+                          return;
+                        }
                         setUserSequence([...userSequence, { word, index: userSequence.length }]);
+                        showInfo("Word Added", `Added "${word}" to your sequence`);
                       }}
                     >
                       {word}
@@ -349,24 +383,40 @@ const BrainGames = () => {
                     const correct =
                       wordSequence.length === userSequence.length &&
                       wordSequence.every((word, i) => word === userSequence[i].word);
-                    toast({
-                      title: correct ? "🎉 Perfect!" : "❌ Not quite",
-                      description: correct
-                        ? "You recalled all words correctly!"
-                        : "Try again or start a new game",
-                      variant: correct ? "default" : "destructive",
-                    });
+                    
+                    if (correct) {
+                      showSuccess("🎉 Perfect Memory! 🎉", "You recalled all words correctly!");
+                      toast({
+                        title: "🎉 Perfect!",
+                        description: "You recalled all words correctly!",
+                        variant: "default",
+                      });
+                    } else {
+                      const correctWords = userSequence.filter((word, i) => word.word === wordSequence[i]).length;
+                      showError("❌ Not quite right", `You got ${correctWords} out of ${wordSequence.length} correct`);
+                      toast({
+                        title: "❌ Not quite",
+                        description: `You got ${correctWords} out of ${wordSequence.length} correct`,
+                        variant: "destructive",
+                      });
+                    }
                   }}
                   disabled={userSequence.length !== wordSequence.length}
                   className="flex-1"
                 >
                   Check Answer
                 </Button>
-                <Button variant="outline" onClick={() => setUserSequence([])}>
+                <Button variant="outline" onClick={() => {
+                  setUserSequence([]);
+                  showInfo("Reset", "Your sequence has been cleared");
+                }}>
                   Reset Selections
                 </Button>
 
-                <Button variant="secondary" onClick={startWordGame}>
+                <Button variant="secondary" onClick={() => {
+                  startWordGame();
+                  showInfo("Game Restarted", "New words to memorize!");
+                }}>
                   Restart Game
                 </Button>
               </div>

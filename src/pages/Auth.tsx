@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Activity, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { showSuccess, showError } from "@/lib/toast-helpers";
 
 const emailSchema = z.string().email("Invalid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -75,11 +76,7 @@ const Auth = () => {
     });
 
     if (error) {
-      toast({
-        title: "Sign In Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      showError("Sign In Failed", error.message);
     }
     setLoading(false);
   };
@@ -103,11 +100,7 @@ const Auth = () => {
     });
 
     if (error) {
-      toast({
-        title: "Sign Up Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      showError("Sign Up Failed", error.message);
     } else {
       // Create profile entry
       const { data: { user } } = await supabase.auth.getUser();
@@ -118,10 +111,7 @@ const Auth = () => {
         });
       }
       
-      toast({
-        title: "Account Created!",
-        description: "You can now sign in with your credentials.",
-      });
+      showSuccess("Account Created!", "You can now sign in with your credentials.");
     }
     setLoading(false);
   };

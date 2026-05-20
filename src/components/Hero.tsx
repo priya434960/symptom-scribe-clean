@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Activity, Shield, Zap, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { showInfo } from "@/lib/toast-helpers";
 
 const featurePills = [
   {
@@ -100,7 +101,10 @@ const Hero = () => {
         >
           <Button
             size="lg"
-            onClick={() => navigate("/auth")}
+            onClick={() => {
+              showInfo("Welcome to Smart Health Tracker", "Sign in to start tracking your health");
+              navigate("/auth");
+            }}
             className="font-bold gap-2 px-8 h-14 text-base rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 group"
           >
             Get Started Free
@@ -109,7 +113,10 @@ const Hero = () => {
           <Button
             size="lg"
             variant="outline"
-            onClick={() => navigate("/auth")}
+            onClick={() => {
+              showInfo("Welcome back!", "Please sign in to continue");
+              navigate("/auth");
+            }}
             className="font-bold px-8 h-14 text-base rounded-full border-2 hover:bg-muted transition-all duration-300 active:scale-95"
           >
             Sign In

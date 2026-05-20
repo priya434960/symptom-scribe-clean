@@ -5,6 +5,7 @@ import { Send, Loader2 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { showSuccess, showError, showInfo, showLoading } from "@/lib/toast-helpers";
 
 interface Message {
   role: "user" | "assistant";
@@ -53,6 +54,9 @@ const ChatInterface = () => {
         return [...prev, { role: "assistant", content: assistantContent }];
       });
     };
+
+    // Show loading toast
+    const { dismiss: dismissLoading } = showLoading("Analyzing symptoms...", "AI is processing your request");
 
     try {
       const response = await fetch(
@@ -108,6 +112,10 @@ const ChatInterface = () => {
       }
       // Save to database
       if (assistantContent) {
+        // Dismiss loading and show success
+        dismissLoading();
+        showSuccess("Analysis complete!", "Your symptoms have been analyzed");
+        
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           // Parse AI response for structured data
@@ -127,6 +135,8 @@ const ChatInterface = () => {
               const severityMatch = trimmedLine.match(/\*\*Severity Level:\*\*\s*\[?(Low|Moderate|High)\]?/i);
               if (severityMatch) {
                 severityLevel = severityMatch[1].toLowerCase();
+                // Show severity info toast
+                showInfo("Severity Assessment", `AI rates this as ${severityLevel} severity`);
               }
             } else if (trimmedLine.includes('**Self-Care Recommendations:**')) {
               currentSection = 'recommendations';
@@ -156,18 +166,16 @@ const ChatInterface = () => {
 
           if (insertError) {
             console.error("Error saving symptom history:", insertError);
+            showError("Save failed", "Could not save to your health history");
           } else {
-            console.log("Symptom history saved successfully");
+            showSuccess("Saved to history", "This analysis has been added to your health records");
           }
         }
       }
     } catch (error) {
       console.error("Chat error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to get response. Please try again.",
-        variant: "destructive",
-      });
+      dismissLoading();
+      showError("Analysis failed", "Failed to get AI response. Please try again.");
       setMessages((prev) => prev.filter((m) => m !== userMessage));
     } finally {
       setIsLoading(false);

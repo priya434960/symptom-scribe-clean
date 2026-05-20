@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { User, Loader2 } from "lucide-react";
+import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
 
 const Profile = () => {
   const [loading, setLoading] = useState(true);
@@ -23,7 +23,6 @@ const Profile = () => {
   });
   const [allergiesInput, setAllergiesInput] = useState("");
   const [conditionsInput, setConditionsInput] = useState("");
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchProfile();
@@ -32,7 +31,11 @@ const Profile = () => {
   const fetchProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        showWarning("Not Signed In", "Please sign in to view your profile");
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("profiles")
@@ -40,7 +43,10 @@ const Profile = () => {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error && error.code !== "PGRST116") throw error;
+      if (error && error.code !== "PGRST116") {
+        showError("Error Loading Profile", error.message);
+        throw error;
+      }
 
       if (data) {
         setProfile({
@@ -55,21 +61,56 @@ const Profile = () => {
         });
         setAllergiesInput(data.allergies?.join(", ") || "");
         setConditionsInput(data.chronic_conditions?.join(", ") || "");
+        
+        if (data.full_name) {
+          showInfo("Profile Loaded", `Welcome back, ${data.full_name}!`);
+        } else {
+          showInfo("Complete Your Profile", "Add your health information for better AI recommendations");
+        }
+      } else {
+        showInfo("New Profile", "Fill out your health information to get started");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
+      showError("Connection Error", "Failed to load your profile");
     } finally {
       setLoading(false);
     }
   };
 
+  const validateProfile = () => {
+    if (profile.emergency_contact_phone && !/^[\d\s+()-]+$/.test(profile.emergency_contact_phone)) {
+      showWarning("Invalid Phone Number", "Please enter a valid phone number");
+      return false;
+    }
+    
+    if (profile.date_of_birth) {
+      const age = new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear();
+      if (age < 0 || age > 120) {
+        showWarning("Invalid Date of Birth", "Please enter a valid date of birth");
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateProfile()) return;
+    
     setSaving(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) {
+        showError("Authentication Error", "You must be logged in to save your profile");
+        setSaving(false);
+        return;
+      }
+
+      console.log("Current user:", user.id);
 
       const allergiesArray = allergiesInput
         .split(",")
@@ -80,28 +121,69 @@ const Profile = () => {
         .map((c) => c.trim())
         .filter((c) => c);
 
-      const { error } = await supabase
+      const profileData = {
+        user_id: user.id,
+        full_name: profile.full_name || null,
+        date_of_birth: profile.date_of_birth || null,
+        gender: profile.gender || null,
+        blood_type: profile.blood_type || null,
+        allergies: allergiesArray,
+        chronic_conditions: conditionsArray,
+        emergency_contact_name: profile.emergency_contact_name || null,
+        emergency_contact_phone: profile.emergency_contact_phone || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log("Saving profile data:", profileData);
+
+      // First check if profile exists
+      const { data: existingProfile } = await supabase
         .from("profiles")
-        .upsert({
-          user_id: user.id,
-          ...profile,
-          allergies: allergiesArray,
-          chronic_conditions: conditionsArray,
-        });
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      let result;
+      if (existingProfile) {
+        // Update existing profile
+        result = await supabase
+          .from("profiles")
+          .update(profileData)
+          .eq("user_id", user.id);
+      } else {
+        // Insert new profile
+        result = await supabase
+          .from("profiles")
+          .insert([profileData]);
+      }
 
-      toast({
-        title: "Profile Updated",
-        description: "Your health profile has been saved successfully.",
-      });
+      if (result.error) {
+        console.error("Supabase error:", result.error);
+        showError("Save Failed", result.error.message);
+        return;
+      }
+
+      console.log("Save successful:", result);
+      
+      // Show success message
+      if (profile.full_name) {
+        showSuccess("Profile Updated!", `Great! Your health profile is now complete, ${profile.full_name}`);
+      } else {
+        showSuccess("Profile Saved", "Your health information has been updated");
+      }
+
+      // Show helpful warnings (optional)
+      if (allergiesArray.length === 0 && conditionsArray.length === 0) {
+        showWarning("Health Info Missing", "Consider adding allergies or conditions for better AI recommendations");
+      }
+      
+      if (!profile.emergency_contact_name || !profile.emergency_contact_phone) {
+        showWarning("Emergency Contact Missing", "Adding an emergency contact is recommended for safety");
+      }
+      
     } catch (error) {
       console.error("Error saving profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save profile",
-        variant: "destructive",
-      });
+      showError("Save Failed", "Could not save your profile. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -201,6 +283,9 @@ const Profile = () => {
                 onChange={(e) => setAllergiesInput(e.target.value)}
                 placeholder="Peanuts, Penicillin, Latex"
               />
+              <p className="text-xs text-muted-foreground">
+                Separate multiple allergies with commas
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -211,6 +296,9 @@ const Profile = () => {
                 onChange={(e) => setConditionsInput(e.target.value)}
                 placeholder="Diabetes, Hypertension"
               />
+              <p className="text-xs text-muted-foreground">
+                Separate multiple conditions with commas
+              </p>
             </div>
 
             <div className="border-t pt-4 mt-6">
@@ -239,6 +327,9 @@ const Profile = () => {
                     }
                     placeholder="+1 (555) 123-4567"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Include country code for international numbers
+                  </p>
                 </div>
               </div>
             </div>

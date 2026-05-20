@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Activity, Heart, Thermometer, Weight, Droplet, Wind } from "lucide-react";
+import { showSuccess, showError } from "@/lib/toast-helpers";
 
 const metricTypes = [
   { value: "blood_pressure", label: "Blood Pressure", icon: Activity, unit: "mmHg" },
@@ -51,10 +52,8 @@ const Metrics = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Metric Recorded",
-        description: "Your health metric has been saved successfully.",
-      });
+      const metricLabel = metricTypes.find(m => m.value === metricType)?.label;
+      showSuccess(`${metricLabel} Recorded`, "Your health metric has been saved successfully.");
 
       // Reset form
       setValue("");
@@ -63,11 +62,7 @@ const Metrics = () => {
       setNotes("");
     } catch (error) {
       console.error("Error saving metric:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save health metric",
-        variant: "destructive",
-      });
+      showError("Failed to Save", "Could not record your health metric");
     } finally {
       setLoading(false);
     }

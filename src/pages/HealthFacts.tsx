@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw, BookOpen, Heart, Brain, Dna } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { showSuccess, showInfo } from "@/lib/toast-helpers";
 
 interface HealthFact {
   category: string;
@@ -131,10 +132,15 @@ const HealthFacts = () => {
     const fact = healthFacts[randomIndex];
     setCurrentFact(fact);
     setFactHistory([fact, ...factHistory.slice(0, 9)]);
+    
+    // Show toast when new fact loads
+    showSuccess("New Health Fact!", `Discovering ${fact.category}`);
   };
 
   useEffect(() => {
     getRandomFact();
+    // Show welcome toast when page loads
+    showInfo("Welcome to Health Facts!", "Learn fascinating insights about the human body");
   }, []);
 
   return (

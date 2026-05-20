@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Activity, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { showError, showSuccess, showInfo } from "@/lib/toast-helpers";
 
 interface Stats {
   totalSymptoms: number;
@@ -41,6 +42,7 @@ const Dashboard = () => {
         .order("created_at", { ascending: false });
 
       if (error) {
+        showError("Error loading dashboard", "Could not fetch your health data");
         console.error("Error fetching symptoms:", error);
       }
 
@@ -61,6 +63,9 @@ const Dashboard = () => {
         });
 
         setRecentHistory(symptoms.slice(0, 5));
+        
+        // Show success toast when data loads
+        showSuccess("Dashboard Updated", `Loaded ${symptoms.length} health records`);
       } else {
         setStats({
           totalSymptoms: 0,
@@ -69,9 +74,13 @@ const Dashboard = () => {
           recentActivity: 0,
         });
         setRecentHistory([]);
+        
+        // Show info toast when no data
+        showInfo("Welcome!", "Start by consulting with the AI Assistant");
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      showError("Connection Error", "Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
