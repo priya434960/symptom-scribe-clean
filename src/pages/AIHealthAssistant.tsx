@@ -265,7 +265,12 @@ const AIHealthAssistant = () => {
                         : "bg-muted text-foreground rounded-bl-sm border border-border"
                     }`}
                   >
-                    {msg.text}
+                    <span dangerouslySetInnerHTML={{ __html: msg.text
+                      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                      .replace(/^- (.+)/gm, "<li>$1</li>")
+                      .replace(/(<li>.*<\/li>)/gs, "<ul style='padding-left:16px;margin:4px 0'>$1</ul>")
+                      .replace(/\n/g, "<br>")
+                    }} />
                   </div>
                   {/* Action cards for assistant */}
                   {msg.role === "assistant" && (
