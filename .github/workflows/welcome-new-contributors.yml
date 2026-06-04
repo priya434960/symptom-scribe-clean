@@ -1,28 +1,110 @@
-name: Welcome New Contributors
+# .github/workflows/welcome-new-contributors.yml
+#
+# PURPOSE:
+#   Automatically posts a welcome message on a contributor's 1st merged PR.
+#
+# DETECTION LOGIC:
+#   1. Triggers on `pull_request_target` with type `closed`.
+#   2. Checks `github.event.pull_request.merged == true` to ensure PR was merged, not just closed.
+#   3. Uses the GitHub REST API to fetch ALL merged PRs by this user and counts them.
+#   4. Posts the welcome message ONLY if this is their first merged PR (count == 1).
+#   5. Checks existing comments to prevent duplicate welcome messages.
+#
+# WHY NOT author_association?
+#   `author_association` values like 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER', 'NONE'
+#   are unreliable and inconsistent across repositories. We instead verify directly
+#   via the API by counting the user's previously merged PRs.
+
+name: Welcome First-Time Contributors
 
 on:
   pull_request_target:
-    types: [closed]
+    types:
+      - closed
 
 jobs:
   welcome:
-    if: github.event.pull_request.merged == true && github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Only run when the PR was actually merged (not just closed/rejected)
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
+      pull-requests: write  # Needed to post a comment on the PR
+
     steps:
-      - name: Post welcome comment
+      - name: Check if first-time contributor and post welcome message
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const message = `🎉 Thank you for contributing to the project! 🌟
+            const contributor = context.payload.pull_request.user.login;
+            const prNumber    = context.payload.pull_request.number;
+            const owner       = context.repo.owner;
+            const repo        = context.repo.repo;
 
-            If you find the repository helpful, please consider giving it a star ⭐ — it really helps support and motivate the project.
+            console.log(`PR #${prNumber} merged by: ${contributor}`);
 
-            Happy Contributing 🚀`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: message
-            });
+            // ── 1. Count how many merged PRs this user has in this repo ──────────
+            // We search for merged PRs by this user. If count is 1, this is their first.
+            let mergedPRCount = 0;
+            try {
+              const searchResult = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:pr is:merged author:${contributor}`,
+                per_page: 2   // We only need to know if count >= 2; fetching 2 is enough
+              });
+              mergedPRCount = searchResult.data.total_count;
+              console.log(`Total merged PRs by ${contributor}: ${mergedPRCount}`);
+            } catch (err) {
+              console.error('Search API error:', err.message);
+              return;
+            }
+
+            // If they have more than 1 merged PR, they're not a first-timer
+            if (mergedPRCount !== 1) {
+              console.log('Not a first-time contributor. Skipping welcome message.');
+              return;
+            }
+
+            // ── 2. Check for duplicate welcome comments ───────────────────────────
+            // Prevent posting the same welcome message twice (e.g., workflow re-runs)
+            const WELCOME_MARKER = '<!-- welcome-first-time-contributor -->';
+            try {
+              const comments = await github.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number: prNumber,
+                per_page: 50
+              });
+              const alreadyWelcomed = comments.data.some(c => c.body.includes(WELCOME_MARKER));
+              if (alreadyWelcomed) {
+                console.log('Welcome message already posted. Skipping duplicate.');
+                return;
+              }
+            } catch (err) {
+              console.error('Error fetching comments:', err.message);
+              return;
+            }
+
+            // ── 3. Post the welcome message ───────────────────────────────────────
+            const welcomeMessage = `${WELCOME_MARKER}
+            
+🎉 **Thank you for your contribution, @${contributor}!** 🌟
+
+Your Pull Request has been successfully merged into the project. Welcome to the **Symptom Scribe** contributor family!
+
+If you find this repository helpful, please consider giving it a ⭐ — it really helps support and motivate the project.
+
+We look forward to seeing more of your amazing contributions!
+
+**Happy Contributing** 🚀`;
+
+            try {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: welcomeMessage
+              });
+              console.log(`Welcome message posted successfully for @${contributor}`);
+            } catch (err) {
+              console.error('Failed to post comment:', err.message);
+            }
