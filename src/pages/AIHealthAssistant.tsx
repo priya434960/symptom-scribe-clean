@@ -291,15 +291,7 @@ const AIHealthAssistant = () => {
   return (
     <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 px-5 py-3 border-b border-border flex items-center justify-between gap-3">
-        <div className="flex items-start gap-2 flex-1 min-w-0">
-          <span className="text-amber-500 text-xs mt-0.5 flex-shrink-0">ℹ️</span>
-          <p className="text-xs text-muted-foreground leading-snug">
-            <span className="font-medium text-foreground">Medical Disclaimer:</span> This is general
-            information only and not a substitute for professional medical advice. Always consult a
-            doctor for diagnosis or treatment.
-          </p>
-        </div>
+      <div className="flex-shrink-0 px-5 py-3 border-b border-border flex items-center justify-end gap-3">
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs text-muted-foreground font-medium">Online</span>
@@ -479,7 +471,7 @@ const AIHealthAssistant = () => {
           <p className="text-center text-xs text-muted-foreground mt-1.5">
             {isListening
               ? "🔴 Listening… click the mic to stop"
-              : "Press Enter to send · Shift+Enter for new line"}
+              : "AI-generated guidance — always consult a doctor for medical advice"}
           </p>
         </div>
       </div>

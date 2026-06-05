@@ -6,27 +6,25 @@ import { cn } from "@/lib/utils";
 export const BackToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Show button when page is scrolled down
-  const toggleVisibility = () => {
-    if (window.pageYOffset > 300) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  };
+  // The app shell scrolls inside <main id="main-scroll">, falling back to the
+  // window for any context where that container isn't present.
+  const getScroller = (): HTMLElement | Window =>
+    document.getElementById("main-scroll") ?? window;
 
-  // Set the top scroll coordinates to 0
-  // set behavior to 'smooth'
+  const getScrollTop = (scroller: HTMLElement | Window) =>
+    scroller instanceof Window ? scroller.scrollY : scroller.scrollTop;
+
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    getScroller().scrollTo({ top: 0, behavior: "smooth" });
   };
 
   useEffect(() => {
-    window.addEventListener("scroll", toggleVisibility);
-    return () => window.removeEventListener("scroll", toggleVisibility);
+    const scroller = getScroller();
+    const toggleVisibility = () => setIsVisible(getScrollTop(scroller) > 300);
+
+    toggleVisibility();
+    scroller.addEventListener("scroll", toggleVisibility);
+    return () => scroller.removeEventListener("scroll", toggleVisibility);
   }, []);
 
   return (

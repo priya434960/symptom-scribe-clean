@@ -205,7 +205,7 @@ if (!isMedicalAnalysis) {
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
-      <div className="flex-1 overflow-y-auto space-y-4 p-4">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 p-4">
        {messages.map((message, index) => (
   <ChatMessage key={index} role={message.role} content={message.content} />
 ))}
