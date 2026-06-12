@@ -89,7 +89,7 @@ const History = () => {
 
           const localEntries = data.map((record: SymptomEntry) => ({
             id: record.id,
-            user_id: (record as any).user_id,
+            user_id: user.id,
             symptoms: record.symptoms,
             severity_level: record.severity_level,
             possible_causes: record.possible_causes,
@@ -201,7 +201,7 @@ const History = () => {
     URL.revokeObjectURL(url);
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string): "destructive" | "default" | "secondary" => {
     switch (severity) {
       case "high": return "destructive";
       case "moderate": return "default";
@@ -305,7 +305,7 @@ const History = () => {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <Badge variant={getSeverityColor(entry.severity_level) as any}>
+                    <Badge variant={getSeverityColor(entry.severity_level)}>
                       {entry.severity_level}
                     </Badge>
                     <Button

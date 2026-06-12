@@ -26,6 +26,89 @@ interface SymptomHistoryRecord {
   created_at: string;
 }
 
+const RadialWellnessGauge = ({ score }: { score: number }) => {
+  const [offset, setOffset] = useState(226.2);
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius; // 226.195
+
+  useEffect(() => {
+    const progressOffset = circumference - (score / 100) * circumference;
+    const timer = setTimeout(() => {
+      setOffset(progressOffset);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [score, circumference]);
+
+  let strokeColor = "url(#wellness-green)";
+  let textColor = "text-emerald-500";
+  let pulseColor = "bg-emerald-500/10";
+
+  if (score < 50) {
+    strokeColor = "url(#wellness-red)";
+    textColor = "text-destructive";
+    pulseColor = "bg-destructive/10";
+  } else if (score < 80) {
+    strokeColor = "url(#wellness-orange)";
+    textColor = "text-orange-500";
+    pulseColor = "bg-orange-500/10";
+  }
+
+  return (
+    <div className="relative flex items-center justify-center w-20 h-20 select-none">
+      <div className={`absolute inset-1 rounded-full animate-pulse blur-md opacity-20 ${pulseColor}`} />
+      
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 88 88">
+        <defs>
+          <linearGradient id="wellness-green" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#14b8a6" />
+          </linearGradient>
+          <linearGradient id="wellness-orange" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#ea580c" />
+          </linearGradient>
+          <linearGradient id="wellness-red" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ef4444" />
+            <stop offset="100%" stopColor="#e11d48" />
+          </linearGradient>
+        </defs>
+        
+        <circle
+          cx="44"
+          cy="44"
+          r={radius}
+          fill="transparent"
+          stroke="currentColor"
+          className="text-muted/10 dark:text-muted/20"
+          strokeWidth="6"
+        />
+        
+        <circle
+          cx="44"
+          cy="44"
+          r={radius}
+          fill="transparent"
+          stroke={strokeColor}
+          strokeWidth="6"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      
+      <div className="absolute flex flex-col items-center justify-center text-center">
+        <span className={`text-base font-black tracking-tight ${textColor}`}>
+          {score}%
+        </span>
+        <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
+          Well
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const [stats, setStats] = useState<Stats>({
     totalSymptoms: 0,
@@ -162,14 +245,19 @@ const Dashboard = () => {
 
         <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:-translate-y-0.5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Risk Score</CardTitle>
+            <CardTitle className="text-sm font-medium">Overall Wellness</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              <CountUp end={stats.avgRiskScore} duration={1.2} />/100
+          <CardContent className="flex items-center justify-between gap-4 pt-1">
+            <div className="space-y-1">
+              <div className="text-2xl font-bold">
+                <CountUp end={100 - stats.avgRiskScore} duration={1.2} />%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Avg Risk: <span className="font-semibold">{stats.avgRiskScore}/100</span>
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">Based on history</p>
+            <RadialWellnessGauge score={100 - stats.avgRiskScore} />
           </CardContent>
         </Card>
 
