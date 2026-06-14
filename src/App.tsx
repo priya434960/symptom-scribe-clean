@@ -28,6 +28,7 @@ import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import ScrollToTop from "@/components/ScrollToTop";
 import BlogPostPage from "@/pages/BlogPostPage";
+import ResetPassword from "./pages/ResetPassword.tsx";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -40,6 +41,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword/>}/>
           <Route
             path="/dashboard"
             element={
