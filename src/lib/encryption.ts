@@ -295,3 +295,104 @@ export function initializeEncryption() {
     isInitializing = false;
   };
 }
+
+// ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
+export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
+  const storedPrivate = localStorage.getItem("symptom_scribe_p2p_private_key");
+  const storedPublic = localStorage.getItem("symptom_scribe_p2p_public_key");
+
+  if (storedPrivate && storedPublic) {
+    try {
+      const privateJwk = JSON.parse(storedPrivate);
+      const publicJwk = JSON.parse(storedPublic);
+
+      const privateKey = await crypto.subtle.importKey(
+        "jwk",
+        privateJwk,
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["sign"]
+      );
+
+      const publicKey = await crypto.subtle.importKey(
+        "jwk",
+        publicJwk,
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["verify"]
+      );
+
+      return { privateKey, publicKey };
+    } catch (err) {
+      console.warn("Failed to load stored P2P keys, generating new ones:", err);
+    }
+  }
+
+  // Generate new ECDSA P-256 keypair
+  const keyPair = await crypto.subtle.generateKey(
+    {
+      name: "ECDSA",
+      namedCurve: "P-256",
+    },
+    true,
+    ["sign", "verify"]
+  );
+
+  const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
+  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+
+  localStorage.setItem("symptom_scribe_p2p_private_key", JSON.stringify(privateJwk));
+  localStorage.setItem("symptom_scribe_p2p_public_key", JSON.stringify(publicJwk));
+
+  return {
+    privateKey: keyPair.privateKey,
+    publicKey: keyPair.publicKey,
+  };
+}
+
+export async function signPayload(payload: string, privateKey: CryptoKey): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(payload);
+  const signatureBuffer = await crypto.subtle.sign(
+    {
+      name: "ECDSA",
+      hash: { name: "SHA-256" },
+    },
+    privateKey,
+    data
+  );
+  return arrayBufferToHex(signatureBuffer);
+}
+
+export async function verifyPayload(
+  payload: string,
+  signatureHex: string,
+  publicKeyJwk: JsonWebKey
+): Promise<boolean> {
+  try {
+    const publicKey = await crypto.subtle.importKey(
+      "jwk",
+      publicKeyJwk,
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["verify"]
+    );
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(payload);
+    const signatureBytes = hexToUint8Array(signatureHex);
+
+    return await crypto.subtle.verify(
+      {
+        name: "ECDSA",
+        hash: { name: "SHA-256" },
+      },
+      publicKey,
+      signatureBytes,
+      data
+    );
+  } catch (err) {
+    console.error("Signature verification failed:", err);
+    return false;
+  }
+}

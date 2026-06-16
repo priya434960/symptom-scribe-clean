@@ -40,15 +40,35 @@ export interface OfflineSymptom {
   search_tokens?: string[] | null;
 }
 
+export interface MeshAlert {
+  id: string;
+  sender_id: string;
+  sender_name: string;
+  latitude: number | null;
+  longitude: number | null;
+  timestamp: string;
+  contact_phone: string;
+  contact_name: string;
+  signature: string;
+  publicKeyJwk: JsonWebKey;
+  pending_sync: number;
+}
+
 class OfflineDatabase extends Dexie {
   healthMetrics!: Table<OfflineMetric>;
   symptomHistory!: Table<OfflineSymptom>;
+  pendingEmergencyMesh!: Table<MeshAlert>;
 
   constructor() {
     super("SymptomScribeOfflineDB");
     this.version(1).stores({
       healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
       symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+    });
+    this.version(2).stores({
+      healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
+      symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+      pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
     });
   }
 }
