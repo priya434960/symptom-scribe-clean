@@ -1,7 +1,7 @@
 import { Shield } from "lucide-react";
 import LegalPageLayout from "@/components/legal/LegalPageLayout";
 import Section from "@/components/legal/Section";
-
+import { Link } from "react-router-dom";
 const Privacy = () => {
   return (
     <LegalPageLayout title="Privacy Policy" icon={Shield}>
@@ -96,11 +96,9 @@ const Privacy = () => {
               Open a GitHub Issue
             </a>
             {" "}or{" "}
-            <a href="/contact"
-                className="text-primary hover:underline"
-            >
-              Contact Support
-            </a>
+            <Link to="/contact" className="text-primary hover:underline">
+               Contact Support
+            </Link>
             .
           </p>
         </Section>
