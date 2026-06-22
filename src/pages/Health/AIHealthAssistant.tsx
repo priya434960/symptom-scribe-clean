@@ -6,7 +6,7 @@ import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, Bot, Mic, MicOff, Send, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
 const suggestions = [
@@ -75,6 +75,14 @@ const AIHealthAssistant = () => {
       window.speechSynthesis?.cancel();
     };
   }, []);
+
+   // Auto-resize textarea as content grows
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [symptoms]);
 
   const handleToggleSpeech = (text: string) => {
     if (currentlyReadingText === text) {
@@ -202,7 +210,15 @@ const AIHealthAssistant = () => {
         }),
       });
 
-      if (!response.ok || !response.body) throw new Error("Failed to start stream");
+      if (!response.ok || !response.body) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("AUTH_ERROR");
+        } else if (response.status >= 500) {
+          throw new Error("SERVER_ERROR");
+        } else {
+          throw new Error("UNKNOWN_ERROR");
+        }
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -328,7 +344,20 @@ const AIHealthAssistant = () => {
     } catch (error) {
       console.error("Chat error:", error);
       dismissLoading();
-      showError("Analysis failed", "Failed to get AI response. Please try again.");
+
+      let errorMessage = "Failed to get AI response. Please try again.";
+
+      if (error instanceof TypeError) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (error instanceof Error) {
+        if (error.message === "AUTH_ERROR") {
+          errorMessage = "Session expired. Please log in again.";
+        } else if (error.message === "SERVER_ERROR") {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+
+      showError("Analysis failed", errorMessage);
       setMessages((prev) => prev.filter((m) => !(m.role === "user" && m.text === userMessage)));
     } finally {
       setLoading(false);
@@ -360,8 +389,8 @@ const AIHealthAssistant = () => {
           /* ── Empty state ── */
           <div className="flex flex-col items-center justify-center h-full px-4 sm:px-6 pb-4 gap-6 text-center">
             <div className="flex flex-col items-center gap-3 w-full min-w-0">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg flex-shrink-0">
-                🤖
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                <Bot className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
               <div className="w-full min-w-0 px-2">
                 <h2 className="text-base sm:text-lg font-semibold break-words">
@@ -419,8 +448,8 @@ const AIHealthAssistant = () => {
                 className={`flex gap-2 sm:gap-3 min-w-0 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "assistant" && (
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 mt-0.5 shadow-sm">
-                    🤖
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
                 {/* min-w-0 here is essential — without it max-w-[85%] has nothing to be 85% *of* */}
@@ -487,7 +516,7 @@ const AIHealthAssistant = () => {
                   <span
                     className={`text-[10px] text-muted-foreground px-1 ${msg.role === "user" ? "text-right" : "text-left"}`}
                   >
-                    {msg.time} {msg.role === "user" && "✓"}
+                    {msg.time} {msg.role === "user" && <Check className="w-3 h-3 inline" />}
                   </span>
                 </div>
               </div>
@@ -495,8 +524,8 @@ const AIHealthAssistant = () => {
 
             {loading && (
               <div className="flex items-start gap-2 sm:gap-3 min-w-0">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 shadow-sm">
-                  🤖
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div className="bg-muted border border-border rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
                   <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0ms]" />
@@ -526,15 +555,7 @@ const AIHealthAssistant = () => {
               } disabled:opacity-30 disabled:cursor-not-allowed`}
               aria-label={isListening ? "Stop voice input" : "Start voice input"}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-4 h-4"
-              >
-                <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
-                <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
-              </svg>
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
 
             {isListening && (
@@ -578,14 +599,7 @@ const AIHealthAssistant = () => {
               className="w-8 h-8 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all flex-shrink-0 hover:scale-105 active:scale-95"
               aria-label="Send"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-3.5 h-3.5 text-white"
-              >
-                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-              </svg>
+              <Send className="w-3.5 h-3.5 text-white" />
             </button>
           </div>
 

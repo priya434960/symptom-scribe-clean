@@ -19,7 +19,7 @@ import BrainGames from "./pages/Games/BrainGames.tsx";
 import HealthFacts from "./pages/Health/HealthFacts.tsx";
 import Settings from "./pages/User/Settings.tsx";
 import NotFound from "./pages/NotFound/index.tsx";
-import ProtectedRoute from "./components/layout/ProtectedRoute.tsx";
+import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import Layout from "./components/layout/Layout.tsx";
 import AIHealthAssistant from "./pages/Health/AIHealthAssistant.tsx";
 
@@ -30,7 +30,7 @@ import Accessibility from "./pages/Legal/Accessibility.tsx";
 import HealthLibrary from "./pages/Health/HealthLibrary.tsx";
 import Blog from "./pages/Blog/index.tsx";
 import Contact from "./pages/Contact/index.tsx";
-import ScrollToTop from "@/components/common/ScrollToTop.tsx";
+import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 import BlogPostPage from "@/pages/Blog/BlogPostPage.tsx";
 import ResetPassword from "./pages/User/ResetPassword.tsx";
 const queryClient = new QueryClient();

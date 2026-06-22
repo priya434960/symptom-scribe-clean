@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
-import './animated-theme-toggler.css';
+import '../styles/animated-theme-toggler.css';
 
 export function AnimatedThemeToggler({ className = '' }) {
   // next-themes is the single source of truth for theme state/persistence.
