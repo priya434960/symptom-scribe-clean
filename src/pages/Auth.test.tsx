@@ -15,27 +15,54 @@
  *  4. Shows a "Redirecting..." state after a successful sign-in.
  *  5. Surfaces an error toast when sign-in fails and re-enables the form.
  *  6. Toggles password visibility.
- *  7. Switches to the sign-up tab.
+ *  7. Switches to the sign-up tab and updates the tabs' aria-selected state.
  *  8. Forgot password: requires an email before calling Supabase.
  *  9. Forgot password: calls resetPasswordForEmail and shows a success toast.
+ *  10. Forgot password: shows a "Reset Failed" toast when Supabase returns an error.
+ *  11. Redirects to /dashboard when onAuthStateChange reports an existing session.
+ *  12. Redirects to /reset-password when the URL signals a recovery flow.
  */
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { render } from "@/test/utils";
 import Auth from "@/pages/Auth";
 
 // ---------------------------------------------------------------------------
-// Mock the Supabase client
+// Mock react-router-dom's useNavigate while keeping everything else (like
+// MemoryRouter, used by the AllProviders test wrapper) real.
 // ---------------------------------------------------------------------------
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>(
+    "react-router-dom"
+  );
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+// ---------------------------------------------------------------------------
+// Mock the Supabase client. The onAuthStateChange callback is captured so
+// tests can invoke it directly to simulate an existing session on mount.
+// ---------------------------------------------------------------------------
+const { authStateChangeHolder } = vi.hoisted(() => ({
+  authStateChangeHolder: {
+    current: undefined as
+      | ((event: string, session: unknown) => void)
+      | undefined,
+  },
+}));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       signInWithPassword: vi.fn(),
       resetPasswordForEmail: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      })),
+      onAuthStateChange: vi.fn((callback) => {
+        authStateChangeHolder.current = callback;
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
+      }),
     },
   },
 }));
@@ -64,8 +91,20 @@ import { supabase } from "@/integrations/supabase/client";
 // Tests
 // ---------------------------------------------------------------------------
 describe("Auth", () => {
+  const originalLocation = window.location;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    authStateChangeHolder.current = undefined;
+  });
+
+  afterEach(() => {
+    // Restore window.location in case a test overrode it to simulate a
+    // password-recovery deep link.
+    Object.defineProperty(window, "location", {
+      value: originalLocation,
+      writable: true,
+    });
   });
 
   // 1. Renders sign-in form by default
@@ -183,16 +222,25 @@ describe("Auth", () => {
     expect(passwordInput).toHaveAttribute("type", "password");
   });
 
-  // 7. Switching tabs renders the sign-up form
-  it("renders the sign-up form when the Sign Up tab is selected", async () => {
+  // 7. Switching tabs renders the sign-up form and updates aria-selected state
+  it("renders the sign-up form and updates tab aria-selected state when Sign Up is selected", async () => {
     const user = userEvent.setup();
     render(<Auth />);
 
-    await user.click(screen.getByRole("tab", { name: /sign up/i }));
+    const signInTab = screen.getByRole("tab", { name: /sign in/i });
+    const signUpTab = screen.getByRole("tab", { name: /sign up/i });
+
+    // Sign In is the default active tab
+    expect(signInTab).toHaveAttribute("aria-selected", "true");
+    expect(signUpTab).toHaveAttribute("aria-selected", "false");
+
+    await user.click(signUpTab);
 
     await waitFor(() => {
       expect(screen.getByText("Sign Up Form")).toBeInTheDocument();
     });
+    expect(signUpTab).toHaveAttribute("aria-selected", "true");
+    expect(signInTab).toHaveAttribute("aria-selected", "false");
   });
 
   // 8. Forgot password requires an email first
@@ -229,5 +277,68 @@ describe("Auth", () => {
         expect.objectContaining({ title: "Reset Email Sent" })
       );
     });
+  });
+
+  // 10. Forgot password shows a "Reset Failed" toast when Supabase errors
+  it("shows a Reset Failed toast when resetPasswordForEmail returns an error", async () => {
+    const user = userEvent.setup();
+    (supabase.auth.resetPasswordForEmail as Mock).mockResolvedValue({
+      error: { message: "User not found" },
+    });
+
+    render(<Auth />);
+
+    await user.type(screen.getByLabelText("Email"), "unknown@example.com");
+    await user.click(screen.getByRole("button", { name: /forgot password/i }));
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Reset Failed",
+          description: "User not found",
+        })
+      );
+    });
+  });
+
+  // 11. Redirects to /dashboard when a session already exists on mount
+  it("redirects to /dashboard when onAuthStateChange reports an existing session", () => {
+    render(<Auth />);
+
+    expect(authStateChangeHolder.current).toBeDefined();
+    authStateChangeHolder.current?.("SIGNED_IN", { user: { id: "user-1" } });
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+  });
+
+  // 12. Redirects to /reset-password when the URL signals a recovery flow
+  it("redirects to /reset-password when the session change is a recovery link", () => {
+    Object.defineProperty(window, "location", {
+      value: {
+        ...originalLocation,
+        href: "https://example.com/auth?type=recovery",
+      },
+      writable: true,
+    });
+
+    render(<Auth />);
+
+    expect(authStateChangeHolder.current).toBeDefined();
+    authStateChangeHolder.current?.("PASSWORD_RECOVERY", {
+      user: { id: "user-1" },
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith("/reset-password");
+    expect(mockNavigate).not.toHaveBeenCalledWith("/dashboard");
+  });
+
+  // 13. Does not navigate when onAuthStateChange reports no session (e.g. sign-out)
+  it("does not navigate when there is no session", () => {
+    render(<Auth />);
+
+    expect(authStateChangeHolder.current).toBeDefined();
+    authStateChangeHolder.current?.("SIGNED_OUT", null);
+
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });
