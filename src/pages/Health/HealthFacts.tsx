@@ -12,10 +12,10 @@ interface HealthFact {
   id: number;
   category: string;
   emoji: string;
-  hook: string;        // the short punchy headline
-  fact: string;        // 1–2 sentences, surprising and specific
-  mindBlown: string;   // the "wait, WHAT?" follow-up line
-  wikiTopic: string;   // Wikipedia article slug for "read more"
+  hook: string;
+  fact: string;
+  mindBlown: string;
+  wikiTopic: string;
   color: string;
 }
 
@@ -239,7 +239,6 @@ const HealthFacts = () => {
   const [saved, setSaved] = useState<Set<number>>(new Set());
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Track shown IDs so no fact repeats until all 20 are seen
   const shownIds = useRef<Set<number>>(new Set());
 
   const getNextFact = (isInitial = false) => {
@@ -268,6 +267,15 @@ const HealthFacts = () => {
     getNextFact(true);
     showInfo("Welcome to Health Facts!", "Weird, surprising, and 100% real 🤯");
   }, []);
+
+  const handleCardClick = () => {
+    if (!isFlipped) {
+      setIsFlipped(true);
+    } else {
+      setIsFlipped(false);
+      getNextFact();
+    }
+  };
 
   const handleLike = (id: number) => {
     setLiked((prev) => {
@@ -320,76 +328,81 @@ const HealthFacts = () => {
       </div>
 
       {/* Current Fact Card */}
-      {currentFact && (
-      <div className="relative flex justify-center py-4">
-      <div className="absolute top-4 w-[650px] h-[450px] rounded-xl bg-card border rotate-[-6deg] opacity-40 scale-95" />
-      <div className="absolute top-2 w-[650px] h-[450px] rounded-xl bg-card border rotate-[6deg] opacity-60 scale-[0.98]" />
+      {currentFact && (() => {
+        const CardIcon = getCategoryIcon(currentFact.category);
+        return (
+          <div className="relative flex justify-center py-4">
+            {/* Decorative background cards — hidden on mobile to avoid overflow */}
+            <div className="absolute top-4 w-full max-w-2xl min-h-[320px] max-h-[70vh] rounded-xl bg-card border rotate-[-6deg] opacity-40 scale-95 hidden sm:block" />
+            <div className="absolute top-2 w-full max-w-2xl min-h-[320px] max-h-[70vh] rounded-xl bg-card border rotate-[6deg] opacity-60 scale-[0.98] hidden sm:block" />
 
-      <Card
-        onClick={() => {
-          if (!isFlipped) {
-            setIsFlipped(true);
-          } else {
-            setIsFlipped(false);
-            getNextFact();
-          }
-        }}
-        className= "relative w-[700px] h-[450px] cursor-pointer shadow-xl">
-      <div className="flashcard-container h-full">
+            <Card
+              onClick={handleCardClick}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleCardClick();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              className="relative w-full max-w-2xl h-auto min-h-[320px] max-h-[70vh] cursor-pointer shadow-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            >
+              <div className="flashcard-container h-full">
+                <div className={`flashcard ${isFlipped ? "flipped" : ""}`}>
 
-      <div className={`flashcard ${isFlipped ? "flipped" : ""}`}>
+                  {/* FRONT */}
+                  <div className="flashcard-front">
+                    <CardContent className="h-full flex flex-col items-center justify-between text-center p-6">
 
-    {/* FRONT */}
+                      <Badge className="text-base px-3 py-1 mt-2">
+                        {currentFact.category}
+                      </Badge>
 
-    <div className="flashcard-front">
-      <CardContent className="h-full flex flex-col items-center justify-center text-center p-10">
+                      {/* Lucide icon instead of emoji */}
+                      <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${currentFact.color} flex items-center justify-center shadow-md`}>
+                        <CardIcon className="w-10 h-10 text-white" />
+                      </div>
 
-        <Badge className="text-lg px-4 py-2">
-          {currentFact.category}
-        </Badge>
+                      <h2 className="text-2xl md:text-3xl font-bold leading-snug">
+                        {currentFact.hook}
+                      </h2>
 
-        <div className="text-8xl mt-10">
-          {currentFact.emoji}
-        </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Tap to Flip
+                      </p>
 
-        <h2 className="text-4xl font-bold mt-10">
-          {currentFact.hook}
-        </h2>
+                    </CardContent>
+                  </div>
 
-        <p className="text-lg text-muted-foreground mt-10">
-          Tap to Flip
-        </p>
+                  {/* BACK */}
+                  <div className="flashcard-back h-full">
+                    <CardContent className="h-full flex flex-col justify-between p-6">
 
-      </CardContent>
-    </div>
-    
-    {/* BACK */}
+                      <p className="text-lg md:text-xl leading-relaxed">
+                        {currentFact.fact}
+                      </p>
 
-    <div className="flashcard-back h-full">
-      <CardContent className="h-full flex flex-col justify-center p-10">
+                      <div className="p-4 rounded-lg bg-primary/10">
+                        <p className="font-medium text-sm md:text-base">
+                          🤯 {currentFact.mindBlown}
+                        </p>
+                      </div>
 
-        <p className="text-xl leading-relaxed">
-          {currentFact.fact}
-        </p>
+                      <p className="text-center text-sm text-muted-foreground">
+                        Tap again for next fact →
+                      </p>
 
-        <div className="mt-8 p-5 rounded-lg bg-primary/10">
-          <p className="font-medium">
-            🤯 {currentFact.mindBlown}
-          </p>
-        </div>
+                    </CardContent>
+                  </div>
 
-        <p className="text-center mt-8 text-muted-foreground">
-          Tap again for next fact →
-        </p>
-      </CardContent>
-      </div>
-      </div>
-      </div>
-      </Card>
-    </div>
-    )}
+                </div>
+              </div>
+            </Card>
+          </div>
+        );
+      })()}
 
-      
       {/* Saved Facts */}
       {savedFacts.length > 0 && (
         <Card>
@@ -400,20 +413,26 @@ const HealthFacts = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {savedFacts.map((fact) => (
-              <div key={fact.id} className="p-3 rounded-lg border border-border bg-accent/30">
-                <div className="flex items-start gap-2">
-                  <span className="text-lg flex-shrink-0">{fact.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">{fact.hook}</p>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{fact.fact}</p>
+            {savedFacts.map((fact) => {
+              const SavedIcon = getCategoryIcon(fact.category);
+              return (
+                <div key={fact.id} className="p-3 rounded-lg border border-border bg-accent/30">
+                  <div className="flex items-start gap-2">
+                    {/* Lucide icon instead of emoji */}
+                    <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${fact.color} flex items-center justify-center flex-shrink-0`}>
+                      <SavedIcon className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">{fact.hook}</p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{fact.fact}</p>
+                    </div>
+                    <button onClick={() => handleSave(fact.id)} className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
+                      ×
+                    </button>
                   </div>
-                  <button onClick={() => handleSave(fact.id)} className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
-                    ×
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
@@ -444,12 +463,14 @@ const HealthFacts = () => {
                     className="p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                     onClick={() => {
                       setCurrentFact(fact);
+                      setIsFlipped(false);
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${fact.color} flex items-center justify-center flex-shrink-0 text-base`}>
-                        {fact.emoji}
+                      {/* Lucide icon instead of emoji */}
+                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${fact.color} flex items-center justify-center flex-shrink-0`}>
+                        <FactIcon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{fact.hook}</p>
