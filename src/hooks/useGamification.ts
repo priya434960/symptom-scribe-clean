@@ -41,6 +41,8 @@ export interface Challenge {
   duration_days: number;
   category: string;
   icon: string;
+  target_value: number;
+  unit: string;
 }
 
 export interface UserChallenge {
@@ -48,8 +50,12 @@ export interface UserChallenge {
   challenge_id: string;
   started_at: string;
   current_streak: number;
+  streak_count: number;
+  best_streak: number;
   completed: boolean;
+  status: string;
   last_check_in: string | null;
+  last_checked_in?: string | null;
   challenges: Challenge;
 }
 
@@ -74,6 +80,7 @@ export interface MoodLog {
   mood: MoodType;
   note: string | null;
   logged_at: string;
+  logged_date?: string;
 }
 
 // ─── Challenges ──────────────────────────────────────────────────────────────
@@ -103,7 +110,15 @@ export function useUserChallenges() {
         .select("*, challenges(*)")
         .eq("user_id", user!.id);
       if (error) throw error;
-      return data as UserChallenge[];
+      return (data ?? []).map((entry) => ({
+        ...entry,
+        current_streak: entry.current_streak ?? entry.streak_count ?? 0,
+        streak_count: entry.streak_count ?? entry.current_streak ?? 0,
+        best_streak: entry.best_streak ?? entry.current_streak ?? entry.streak_count ?? 0,
+        completed: entry.completed ?? entry.status === "completed",
+        status: entry.status ?? (entry.completed ? "completed" : "active"),
+        last_checked_in: entry.last_check_in ?? null,
+      })) as unknown as UserChallenge[];
     },
   });
 }
@@ -180,7 +195,7 @@ export function useUserBadges() {
         .eq("user_id", user!.id)
         .order("earned_at", { ascending: false });
       if (error) throw error;
-      return data as UserBadge[];
+      return (data ?? []) as unknown as UserBadge[];
     },
   });
 }
@@ -202,7 +217,10 @@ export function useMoodLogs() {
         .gte("logged_at", thirtyDaysAgo.toISOString().split("T")[0])
         .order("logged_at", { ascending: true });
       if (error) throw error;
-      return data as MoodLog[];
+      return (data ?? []).map((entry) => ({
+        ...entry,
+        logged_date: entry.logged_at,
+      })) as MoodLog[];
     },
   });
 }

@@ -9,7 +9,7 @@ import { browserEnv } from "@/lib/env";
 import { showSuccess, showError, showInfo, showLoading } from "@/lib/toast-helpers";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
-import { encryptSymptom, db } from "@/lib/offline-db";
+import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 import {
   computeRiskScore,
   parseSymptomConsultation,
@@ -307,18 +307,44 @@ const ChatInterface = () => {
           };
 
           const keys = await whenKeysReady();
+          const offlineRecord: OfflineSymptom = {
+            id: symptomInsert.id ?? recordId,
+            user_id: symptomInsert.user_id,
+            symptoms: symptomInsert.symptoms,
+            ai_analysis: symptomInsert.ai_analysis,
+            severity_level: symptomInsert.severity_level,
+            possible_causes: symptomInsert.possible_causes ?? null,
+            recommendations: symptomInsert.recommendations ?? null,
+            risk_score: symptomInsert.risk_score ?? null,
+            resolved: symptomInsert.resolved ?? false,
+            created_at: symptomInsert.created_at ?? new Date().toISOString(),
+            pending_sync: 0,
+            pending_update: 0,
+            pending_delete: 0,
+          };
+
           const encryptedRecord = await encryptSymptom(
-            {
-              ...symptomInsert,
-              pending_sync: 0,
-              pending_update: 0,
-              pending_delete: 0,
-            },
+            offlineRecord,
             keys.encryptionKey,
             keys.searchKey
           );
+          const supabaseRecord: TablesInsert<"symptom_history"> = {
+            id: encryptedRecord.id,
+            user_id: encryptedRecord.user_id,
+            symptoms: encryptedRecord.symptoms,
+            ai_analysis: encryptedRecord.ai_analysis,
+            severity_level: encryptedRecord.severity_level,
+            possible_causes: encryptedRecord.possible_causes,
+            recommendations: encryptedRecord.recommendations,
+            risk_score: encryptedRecord.risk_score,
+            resolved: encryptedRecord.resolved,
+            created_at: encryptedRecord.created_at,
+            search_tokens: encryptedRecord.search_tokens ?? null,
+          };
 
-          const { error: insertError } = await supabase.from("symptom_history").insert(encryptedRecord);
+          const { error: insertError } = await supabase
+            .from("symptom_history")
+            .insert(supabaseRecord);
 
           if (insertError) {
             console.error("Error saving symptom history:", insertError);
