@@ -56,7 +56,6 @@ export async function whenSearchReady(): Promise<CryptoKey> {
   return keys.searchKey;
 }
 
-// Helper functions for Hex conversion
 function arrayBufferToHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -266,12 +265,7 @@ async function handleSessionChange(session: Session) {
 
   if (token === lastToken) return;
 
-  // FIX: Use only the in-memory lastToken for rotation detection.
-  // Previously fell back to localStorage.getItem("symptom_scribe_last_token"),
-  // which persisted the raw JWT as a plaintext bearer credential in localStorage.
-  // Supabase already restores the session on page reload via onAuthStateChange,
-  // so the localStorage fallback was redundant and a security risk.
-  const prevToken = lastToken;
+   const prevToken = lastToken;
 
   try {
     const userId = session.user?.id;
@@ -288,24 +282,19 @@ async function handleSessionChange(session: Session) {
 
     setKeys(newKey, newSearchKey);
     lastToken = token;
-    // FIX: Removed localStorage.setItem("symptom_scribe_last_token", token) — JWT must not be stored in localStorage.
   } catch (error) {
     console.error("Failed to derive or rotate encryption keys:", error);
     setKeys(null, null);
     lastToken = null;
-    // FIX: Removed localStorage.removeItem("symptom_scribe_last_token") — no longer stored there.
   }
 }
 
 async function handleSessionClear() {
-  // Clear the per-user PBKDF2 salt from localStorage on logout so it does
-  // not persist across sessions. userId must be captured before keys are nulled.
   const { data: { user } } = await supabase.auth.getUser();
   if (user?.id) clearUserSalt(user.id);
 
   setKeys(null, null);
   lastToken = null;
-  // FIX: Removed localStorage.removeItem("symptom_scribe_last_token") — no longer stored there.
   if (onLogoutCallback) {
     await onLogoutCallback();
   }
