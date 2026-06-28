@@ -1,4 +1,5 @@
-import { Redis } from "https://esm.sh/@upstash/redis";
+// FIX: Added explicit version @1.34.3 to prevent non-reproducible builds.
+import { Redis } from "https://esm.sh/@upstash/redis@1.34.3";
 
 const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
 const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
