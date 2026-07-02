@@ -10,6 +10,7 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:8080",
   "https://symptom-scribe.vercel.app",
+  "https://symptom-scribe-clean.netlify.app",
 ];
 
 const getCorsHeaders = (origin: string | null) => ({
