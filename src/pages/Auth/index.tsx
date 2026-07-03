@@ -28,6 +28,7 @@ import {
 import { z } from "zod";
 
 import { showSuccess, showError } from "@/lib/toast-helpers";
+import { setupKeysFromPassword } from "@/lib/encryption";
 
 import MultiStepSignUp from "@/components/registration/forms/MultiStepSignUp";
 
@@ -101,7 +102,7 @@ const Auth = () => {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
       email: signInEmail,
       password: signInPassword,
     });
@@ -110,6 +111,13 @@ const Auth = () => {
       showError("Sign In Failed", error.message);
       setLoading(false);
     } else {
+      if (signInData?.user) {
+        try {
+          await setupKeysFromPassword(signInPassword, signInEmail, signInData.user.id);
+        } catch (deriveErr) {
+          console.error("Error setting up encryption keys:", deriveErr);
+        }
+      }
       setLoading(false);
       setRedirecting(true);
     }

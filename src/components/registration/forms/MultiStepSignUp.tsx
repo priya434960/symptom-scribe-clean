@@ -22,6 +22,7 @@ import {
   DEFAULT_PASSWORD_POLICY,
   evaluatePasswordStrength,
 } from "@/lib/password-strength";
+import { setupKeysFromPassword } from "@/lib/encryption";
 
 const STEPS = ["Account", "Personal", "Health", "Emergency", "Review"] as const;
 
@@ -171,6 +172,14 @@ const MultiStepSignUp = () => {
         // Send the user back to the credentials step with their data intact.
         setStep(0);
         return;
+      }
+
+      if (signUpData?.user) {
+        try {
+          await setupKeysFromPassword(data.password, data.email, signUpData.user.id);
+        } catch (deriveErr) {
+          console.error("Error setting up encryption keys:", deriveErr);
+        }
       }
 
       if (signUpData?.user && !signUpData?.session) {
