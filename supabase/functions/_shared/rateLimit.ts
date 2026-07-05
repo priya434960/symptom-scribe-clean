@@ -9,8 +9,19 @@ const requestStore = new Map<string, RequestRecord>();
 
 const WINDOW_SIZE_MS = 60 * 1000;
 const MAX_REQUESTS = 10;
+let warnedAboutFallback = false;
 
 function memoryRateLimit(ip: string): { success: boolean } {
+  if (!warnedAboutFallback) {
+    warnedAboutFallback = true;
+    console.warn(
+      "[rateLimit] Redis is not configured or unreachable — falling back to a " +
+        "per-instance in-memory rate limiter. This does NOT enforce a global " +
+        "limit across multiple Edge Function instances. Configure " +
+        "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for reliable " +
+        "rate limiting in production."
+    );
+  }
   const now = Date.now();
   const existing = requestStore.get(ip);
   
