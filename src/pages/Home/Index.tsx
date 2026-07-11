@@ -553,7 +553,7 @@ const Index = () => {
         </motion.div>
       </section>
       <footer className="border-t border-border bg-gradient-to-b from-background to-muted/30">
-  <div className="container mx-auto px-4 py-12">
+  <div className="container mx-auto px-4 py-12 ">
     <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-10">
       {/* Brand Column */}
 <div className="lg:col-span-2">
@@ -586,10 +586,10 @@ const Index = () => {
           Platform
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/chat" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Brain className="w-4 h-4" /> AI Symptom Checker</Link></li>
-          <li><Link to="/metrics" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Health Metrics</Link></li>
-          <li><Link to="/history" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Clock className="w-4 h-4" /> Consultation History</Link></li>
-          <li><Link to="/brain-games" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Brain className="w-4 h-4" /> Brain Training</Link></li>
+          <li><Link to="/chat" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> AI Symptom Checker</span></Link></li>
+          <li><Link to="/metrics" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Health Metrics</span></Link></li>
+          <li><Link to="/history" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Clock className="w-4 h-4 transition-transform duration-300  group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Consultation History</span></Link></li>
+          <li><Link to="/brain-games" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Brain Training</span></Link></li>
         </ul>
       </div>
       
@@ -600,8 +600,8 @@ const Index = () => {
           Resources
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/health-library" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Heart className="w-4 h-4" /> Health Library</Link></li>
-          <li><Link to="/emergency" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Shield className="w-4 h-4" /> Emergency Guide</Link></li>
+          <li><Link to="/health-library" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Heart className="w-4 h-4 transition-transform duration-300  group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Health Library</span></Link></li>
+          <li><Link to="/emergency" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full "><Shield className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Emergency Guide</span></Link></li>
           <li>
           <button
             onClick={() => {
@@ -612,12 +612,13 @@ const Index = () => {
                 window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
               }
             }}
-            className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 w-full text-left text-sm"
+            className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
           >
-            <HelpCircle className="w-4 h-4" /> FAQ
+            <HelpCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+            <span className="transition-transform duration-300 group-hover:translate-x-1"> FAQ</span>
           </button>
         </li>
-          <li><Link to="/blog" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><FileText className="w-4 h-4" /> Blog</Link></li>
+          <li><Link to="/blog" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Blog</span></Link></li>
         </ul>
       </div>
       
@@ -628,10 +629,10 @@ const Index = () => {
           Legal
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Lock className="w-4 h-4" /> Privacy Policy</Link></li>
-          <li><Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><FileText className="w-4 h-4" /> Terms of Service</Link></li>
-          <li><Link to="/disclaimer" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><AlertCircle className="w-4 h-4" /> Medical Disclaimer</Link></li>
-          <li><Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Mail className="w-4 h-4" /> Contact Support</Link></li>
+          <li><Link to="/privacy" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Lock className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Privacy Policy</span></Link></li>
+          <li><Link to="/terms" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Terms of Service</span></Link></li>
+          <li><Link to="/disclaimer" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><AlertCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Medical Disclaimer</span></Link></li>
+          <li><Link to="/contact" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Mail className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Contact Support</span></Link></li>
         </ul>
       </div>
     </div>
